@@ -1,6 +1,6 @@
 {
   "name": "irestore",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Utility to extract files and keychain information from iOS backups",
   "main": "index.js",
   "scripts": {
