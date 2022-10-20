@@ -1,5 +1,5 @@
 export default class IRestore {
-  constructor(backupPath: string);
+  constructor(backupPath: string, password?: string);
   ls(domain: string): Promise<string>;
   restore(domain: string, path: string): Promise<string>;
   dumpKeys(outputFile: string): Promise<string>;
