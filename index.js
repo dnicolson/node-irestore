@@ -1,16 +1,52 @@
 const { spawn } = require('child_process');
+const os = require('os');
+const pty = require('node-pty');
+const shellescape = require('shell-escape');
 
 class IRestore {
-  constructor(backupPath) {
+  constructor(backupPath, password = null) {
     this.backupPath = backupPath;
+    this.password = password;
+  }
+
+  _runPtyProcess(bin, args, resolve) {
+    const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+    const ptyProcess = pty.spawn(shell, [], {
+      name: 'xterm-color',
+      cols: 80,
+      rows: 30,
+      cwd: process.env.HOME,
+      env: process.env,
+    });
+    
+    let output;
+    ptyProcess.onData((data) => {
+      const lines = data.toString();
+      if (lines.endsWith('Backup Password: ')) {
+        ptyProcess.write(`${this.password}\n`);
+      }
+
+      output += lines;
+      if (lines.startsWith("\u001b[?2004") && output.length > 200) {
+        ptyProcess.kill();
+        resolve(output);
+      }
+    });
+
+    ptyProcess.write(`${bin} ${shellescape(args)}\n`);
   }
 
   _command(args) {
     return new Promise((resolve) => {
-      const child = spawn(`${process.env.PWD}/node_modules/.bin/irestore`, args, { stdio: ['inherit', 'inherit'] });
-      child.on('exit', () => {
-        resolve();
-      });
+      const bin = `${process.env.PWD}/node_modules/.bin/irestore`;
+      if (this.password) {
+        this._runPtyProcess(bin, args, resolve);
+      } else {
+        const child = spawn(bin, args, { stdio: ['inherit', 'inherit'] });
+        child.on('exit', () => {
+          resolve();
+        });
+      }
     });
   }
 
