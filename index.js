@@ -50,7 +50,7 @@ class IRestore {
 
   runCommand(args) {
     return new Promise(async (resolve, reject) => {
-      const bin = path.join(__dirname, 'node_modules/.bin/irestore')
+      const bin = path.join(path.dirname(require.main.filename), 'node_modules/.bin/irestore')
       if (this.password) {
         try {
           const output = await this._runPtyProcess(bin, args);
