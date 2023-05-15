@@ -26,7 +26,7 @@ A backup can be restored with the following commands:
 ```
 const IRestore = require('irestore');
 const iRestore = new IRestore('/path/to/backup');
-await iRestore.restore('HomeDomain', '/path/to/decrypted-backup')
+await iRestore.restore('HomeDomain', '/path/to/decrypted-backup');
 ```
 
 ## License

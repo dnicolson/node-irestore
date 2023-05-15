@@ -1,6 +1,6 @@
 {
   "name": "irestore",
-  "version": "0.4.2",
+  "version": "1.0.0",
   "description": "Utility to extract files and keychain information from iOS backups",
   "repository": {
     "type": "git",
@@ -25,6 +25,6 @@
   "goBinary": {
     "name": "irestore",
     "path": "./bin",
-    "url": "https://github.com/dnicolson/irestore/releases/download/v0.1.2/irestore_0.1.2_{{platform}}_{{arch}}.tar.gz"
+    "url": "https://github.com/dnicolson/irestore/releases/download/v0.2.0/irestore_0.2.0_{{platform}}_{{arch}}.tar.gz"
   }
 }

@@ -20,19 +20,23 @@ class IRestore {
         cwd: process.env.HOME,
         env: process.env,
       });
-      
-      let output;
-      let timesDoneOutputted = 0;
+
+      let output = '';
       let passwordEntered = false;
+
       ptyProcess.onData((data) => {
         const lines = data.toString();
 
         if (lines.endsWith('Backup Password: ')) {
-          ptyProcess.write(`${this.password}\n`);
+          ptyProcess.write(`${this.password}\r`);
           passwordEntered = true;
         }
 
-        if (lines.includes('irestore done.') && timesDoneOutputted++ === 2) {
+        if (lines.includes('Bad password')) {
+          return reject('Bad password.');
+        }
+
+        if (lines.trim() === 'irestore done.') {
           ptyProcess.kill();
           if (passwordEntered) {
             resolve(output);
@@ -44,13 +48,13 @@ class IRestore {
         output += lines;
       });
 
-      ptyProcess.write(`${bin} ${shellescape(args)}; echo 'irestore done.'\n`);
+      ptyProcess.write(`${bin} ${shellescape(args)}; echo 'irestore done.'\r`);
     });
   }
 
   runCommand(args) {
     return new Promise(async (resolve, reject) => {
-      const bin = path.join(path.dirname(require.main.filename), 'node_modules/.bin/irestore')
+      const bin = path.join(__dirname, 'node_modules/.bin/irestore');
       if (this.password) {
         try {
           const output = await this._runPtyProcess(bin, args);

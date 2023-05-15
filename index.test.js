@@ -1,4 +1,4 @@
-const IRestore = require('irestore');
+const IRestore = require('./index');
 const pty = require('node-pty');
 
 describe('irestore', () => {
@@ -13,12 +13,11 @@ describe('irestore', () => {
   });
 
   it('launches a pty if a password is provided', async () => {
-    const spy = jest.spyOn(pty, 'spawn');
+    jest.spyOn(pty, 'spawn');
+
     const iRestore = new IRestore('xxx', '123');
 
-    await iRestore.apps();
-
-    expect(spy).toBeCalled();
-    spy.mockReset();
+    await expect(iRestore.apps()).rejects.toEqual('pty error, please try again.');
+    expect(pty.spawn).toBeCalled();
   });
 });
