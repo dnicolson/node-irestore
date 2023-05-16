@@ -1,7 +1,18 @@
 {
   "name": "irestore",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Utility to extract files and keychain information from iOS backups",
+  "keywords": [
+    "ios",
+    "ipados",
+    "keychain",
+    "encryption",
+    "decryption",
+    "irestore",
+    "apple",
+    "password",
+    "credentials"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/dnicolson/node-irestore.git"
