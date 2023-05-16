@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const os = require('os');
 const path = require('path');
 const pty = require('node-pty');
@@ -54,7 +54,21 @@ class IRestore {
 
   runCommand(args) {
     return new Promise(async (resolve, reject) => {
-      const bin = path.join(__dirname, 'node_modules/.bin/irestore');
+      let binPath;
+      try {
+        binPath = execSync('npm bin').toString();
+      } catch (error) {
+        const env = process.env;
+        if (env && env.npm_config_prefix) {
+          binPath = path.join(env.npm_config_prefix, 'bin');
+        } else if (env && env.npm_config_local_prefix) {
+          binPath = path.join(env.npm_config_local_prefix, path.join('node_modules', '.bin'));
+        } else {
+          binPath = path.join(process.cwd(), 'node_modules', '.bin');
+        }
+      }
+      const bin = path.join(binPath, 'irestore');
+
       if (this.password) {
         try {
           const output = await this._runPtyProcess(bin, args);
