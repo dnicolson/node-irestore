@@ -56,7 +56,7 @@ class IRestore {
     return new Promise(async (resolve, reject) => {
       let binPath;
       try {
-        binPath = execSync('npm bin').toString();
+        binPath = execSync('npm bin').toString().trim();
       } catch (error) {
         const env = process.env;
         if (env && env.npm_config_prefix) {
