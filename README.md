@@ -1,7 +1,6 @@
 # irestore
 
-This a wrapper around the [iOS Backup Extraction](https://github.com/dunhamsteve/ios) Go program. It is based on a [fork](https://github.com/dnicolson/irestore) which has some modifications, most importantly replacing the first argument with the path to the backup rather than the GUID.
-
+A wrapper around the [iOS Backup Extraction](https://github.com/dunhamsteve/ios) Go program. It is based on a [fork](https://github.com/dnicolson/irestore) which has some modifications, most importantly replacing the first argument with the path to the backup rather than the GUID.
 
 ## Installation
 
