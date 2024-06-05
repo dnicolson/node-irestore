@@ -1,6 +1,6 @@
 {
   "name": "irestore",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Utility to extract files and keychain information from iOS backups",
   "keywords": [
     "ios",
@@ -15,7 +15,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/dnicolson/node-irestore"
+    "url": "git+https://github.com/dnicolson/node-irestore.git"
   },
   "license": "MIT",
   "author": "Dave Nicolson <david.nicolson@gmail.com>",
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@go-task/go-npm": "^0.1.16",
-    "node-pty": "^0.10.1",
+    "node-pty": "^1.0.0",
     "shell-escape": "^0.2.0"
   },
   "devDependencies": {
