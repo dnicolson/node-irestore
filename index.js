@@ -1,5 +1,6 @@
 const { execSync, spawn } = require('child_process');
 const os = require('os');
+const fs = require('fs');
 const path = require('path');
 const pty = require('node-pty');
 const shellescape = require('shell-escape');
@@ -67,7 +68,16 @@ class IRestore {
           binPath = path.join(process.cwd(), 'node_modules', '.bin');
         }
       }
-      const bin = path.join(binPath, 'irestore');
+
+      let bin = path.join(binPath, 'irestore');
+      if (!fs.existsSync(bin)) {
+        const npmGlobalPrefix = execSync('npm prefix -g').toString().trim();
+        bin = path.join(npmGlobalPrefix, 'bin', 'irestore');
+
+        if (!fs.existsSync(bin)) {
+          bin = 'irestore';
+        }
+      }
 
       if (this.password) {
         try {
