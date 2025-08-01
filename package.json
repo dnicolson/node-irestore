@@ -1,6 +1,6 @@
 {
   "name": "irestore",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Utility to extract files and keychain information from iOS backups",
   "keywords": [
     "ios",
