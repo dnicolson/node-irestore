@@ -37,7 +37,7 @@ class IRestore {
           return reject('Bad password.');
         }
 
-        if (lines.trim() === 'irestore done.') {
+        if (lines.startsWith('irestore done.')) {
           ptyProcess.kill();
           if (passwordEntered) {
             resolve(output);
