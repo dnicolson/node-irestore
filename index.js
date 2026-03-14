@@ -1,9 +1,41 @@
-const { execSync, spawn } = require('child_process');
+const { spawn } = require('child_process');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const pty = require('node-pty');
-const shellescape = require('shell-escape');
+
+function isExecutable(filePath) {
+  try {
+    fs.accessSync(filePath, fs.constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function expandHome(dir) {
+  if (dir === '~') {
+    return os.homedir();
+  }
+
+  if (dir.startsWith('~/')) {
+    return path.join(os.homedir(), dir.slice(2));
+  }
+
+  if (!dir.startsWith('~')) {
+    return dir;
+  }
+
+  return dir;
+}
+
+function stripTerminalControlSequences(value) {
+  return value
+    .replace(/\u001B\][^\u0007]*(?:\u0007|\u001B\\)/g, '')
+    .replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '')
+    .replace(/\u001B[@-Z\\-_]/g, '')
+    .replace(/\u0007/g, '');
+}
 
 class IRestore {
   constructor(backupPath, password = null) {
@@ -11,90 +43,124 @@ class IRestore {
     this.password = password;
   }
 
+  _resolveBinaryPath() {
+    const binaryName = process.platform === 'win32' ? 'irestore.exe' : 'irestore';
+    const localBinary = path.join(__dirname, 'bin', binaryName);
+    const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean).map(expandHome);
+
+    if (isExecutable(localBinary)) {
+      return localBinary;
+    }
+
+    for (const dir of pathEntries) {
+      const candidate = path.join(dir, binaryName);
+      if (isExecutable(candidate)) {
+        return candidate;
+      }
+    }
+
+    throw new Error(
+      'Could not find an executable `irestore` binary. Reinstall the package with install scripts enabled, or install `irestore` so it is available on PATH.'
+    );
+  }
+
   _runPtyProcess(bin, args) {
     return new Promise((resolve, reject) => {
-      const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-      const ptyProcess = pty.spawn(shell, [], {
-        name: 'xterm-color',
-        cols: 80,
-        rows: 30,
-        cwd: process.env.HOME,
-        env: process.env,
-      });
-
       let output = '';
       let passwordEntered = false;
+      let settled = false;
+      let ptyProcess;
+
+      const finish = (error = null) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+
+        try {
+          ptyProcess && ptyProcess.kill();
+        } catch {
+          // The process may have already exited.
+        }
+
+        if (error) {
+          reject(error instanceof Error ? error : new Error(String(error)));
+          return;
+        }
+
+        resolve(output);
+      };
+
+      try {
+        ptyProcess = pty.spawn(bin, args, {
+          name: 'xterm-color',
+          cols: 80,
+          rows: 30,
+          cwd: process.cwd(),
+          env: process.env,
+        });
+      } catch (error) {
+        finish(error);
+        return;
+      }
 
       ptyProcess.onData((data) => {
         const lines = data.toString();
+        output += lines;
+        const cleanedOutput = stripTerminalControlSequences(output);
 
-        if (lines.endsWith('Backup Password: ')) {
+        if (!passwordEntered && cleanedOutput.includes('Backup Password:')) {
           ptyProcess.write(`${this.password}\r`);
           passwordEntered = true;
         }
 
-        if (lines.includes('Bad password')) {
-          return reject('Bad password.');
+        if (cleanedOutput.includes('Bad password')) {
+          finish(new Error('Bad password.'));
         }
-
-        if (lines.startsWith('irestore done.')) {
-          ptyProcess.kill();
-          if (passwordEntered) {
-            resolve(output);
-          } else {
-            reject('pty error, please try again.');
-          }
-        }
-
-        output += lines;
       });
 
-      ptyProcess.write(`${bin} ${shellescape(args)}; echo 'irestore done.'\r`);
+      ptyProcess.onExit(({ exitCode, signal }) => {
+        if (settled) {
+          return;
+        }
+
+        if (exitCode === 0) {
+          finish();
+          return;
+        }
+
+        const normalizedOutput = output.replace(/\r/g, '').trim();
+        const message =
+          normalizedOutput || `irestore exited with code ${exitCode}${signal ? ` (signal ${signal})` : ''}.`;
+
+        finish(new Error(message));
+      });
     });
   }
 
-  runCommand(args) {
-    return new Promise(async (resolve, reject) => {
-      let binPath;
-      try {
-        binPath = execSync('npm bin').toString().trim();
-      } catch (error) {
-        const env = process.env;
-        if (env && env.npm_config_prefix) {
-          binPath = path.join(env.npm_config_prefix, 'bin');
-        } else if (env && env.npm_config_local_prefix) {
-          binPath = path.join(env.npm_config_local_prefix, path.join('node_modules', '.bin'));
-        } else {
-          binPath = path.join(process.cwd(), 'node_modules', '.bin');
-        }
-      }
+  async runCommand(args) {
+    const bin = this._resolveBinaryPath();
 
-      let bin = path.join(binPath, 'irestore');
-      if (!fs.existsSync(bin)) {
-        const npmGlobalPrefix = execSync('npm prefix -g').toString().trim();
-        bin = path.join(npmGlobalPrefix, 'bin', 'irestore');
+    if (this.password) {
+      return this._runPtyProcess(bin, args);
+    }
 
-        if (!fs.existsSync(bin)) {
-          bin = 'irestore';
-        }
-      }
+    return new Promise((resolve, reject) => {
+      const child = spawn(bin, args, { stdio: 'inherit' });
 
-      if (this.password) {
-        try {
-          const output = await this._runPtyProcess(bin, args);
-          resolve(output);
-        } catch(err) {
-          reject(err);
-        }
-      } else {
-        const child = spawn(bin, args, { stdio: ['inherit', 'inherit'] });
-        if (!child) {
-          return reject();
-        }
-        child.on('exit', () => {
+      child.on('error', (error) => {
+        reject(error);
+      });
+
+      child.on('exit', (exitCode, signal) => {
+        if (exitCode === 0) {
           resolve();
-        });
-      }
+          return;
+        }
+
+        reject(new Error(`irestore exited with code ${exitCode}${signal ? ` (signal ${signal})` : ''}.`));
+      });
     });
   }
 

@@ -2,6 +2,10 @@ const IRestore = require('./index');
 const pty = require('node-pty');
 
 describe('irestore', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('exports the correct methods', () => {
     const iRestore = new IRestore('xxx');
 
@@ -13,11 +17,30 @@ describe('irestore', () => {
   });
 
   it('launches a pty if a password is provided', async () => {
-    jest.spyOn(pty, 'spawn');
+    const callbacks = {};
+    const ptyProcess = {
+      onData: jest.fn((cb) => {
+        callbacks.data = cb;
+      }),
+      onExit: jest.fn((cb) => {
+        callbacks.exit = cb;
+      }),
+      write: jest.fn(),
+      kill: jest.fn(),
+    };
+
+    jest.spyOn(IRestore.prototype, '_resolveBinaryPath').mockReturnValue('irestore');
+    jest.spyOn(pty, 'spawn').mockReturnValue(ptyProcess);
 
     const iRestore = new IRestore('xxx', '123');
+    const pending = iRestore.apps();
 
-    await expect(iRestore.apps()).rejects.toEqual('pty error, please try again.');
-    expect(pty.spawn).toBeCalled();
+    expect(pty.spawn).toBeCalledWith('irestore', ['xxx', 'apps'], expect.any(Object));
+
+    callbacks.data('Backup Password: ');
+    expect(ptyProcess.write).toBeCalledWith('123\r');
+
+    callbacks.exit({ exitCode: 0 });
+    await expect(pending).resolves.toContain('Backup Password:');
   });
 });
