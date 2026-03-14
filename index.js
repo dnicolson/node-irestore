@@ -172,6 +172,10 @@ class IRestore {
     return this.runCommand([this.backupPath, 'restore', domain, path]);
   }
 
+  unrestore(domain, path, outputPath) {
+    return this.runCommand([this.backupPath, 'restore', domain, path, outputPath]);
+  }
+
   dumpKeys(outputFile) {
     return this.runCommand([this.backupPath, 'dumpkeys', outputFile]);
   }

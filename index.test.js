@@ -11,6 +11,7 @@ describe('irestore', () => {
 
     expect(iRestore.ls).toEqual(expect.any(Function));
     expect(iRestore.restore).toEqual(expect.any(Function));
+    expect(iRestore.unrestore).toEqual(expect.any(Function));
     expect(iRestore.dumpKeys).toEqual(expect.any(Function));
     expect(iRestore.encryptKeys).toEqual(expect.any(Function));
     expect(iRestore.apps).toEqual(expect.any(Function));
