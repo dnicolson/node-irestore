@@ -1,6 +1,6 @@
 {
   "name": "irestore",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Utility to extract files and keychain information from iOS backups",
   "keywords": [
     "ios",
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@go-task/go-npm": "^0.2.0",
-    "node-pty": "^1.0.0",
+    "node-pty": "^1.2.0-beta.12",
     "shell-escape": "^0.2.0"
   },
   "devDependencies": {
